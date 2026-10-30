@@ -301,8 +301,8 @@ async function route() {
   await routes[name](view, new URLSearchParams(qs)); paint(view)
 }
 function showLogin(init, uid) { $('#myuid').textContent = uid || ''; $('#login').hidden = false; $('#shell').hidden = true; $('#lf').hidden = !!init; $('#initf').hidden = !init; paint($('#login')) }
-async function enter() {
-  try { ME = await call('me') } catch (e) { return showLogin() }
+async function enter(manual) {
+  try { ME = await call('me') } catch (e) { console.error(e); if (manual) $('#le').textContent = '登录后无法连接后台 ' + (e.message || ''); return showLogin() }
   if (!ME || ME.notAdmin) return showLogin(true, ME?.uid)
   $('#login').hidden = true; $('#shell').hidden = false
   $('#who').textContent = ME.name + (ME.role === 'super' ? ' 超级管理员' : ' 管理员')
@@ -313,8 +313,14 @@ const logout = async () => { await auth.signOut(); location.reload() }
 $('#lo').onclick = $('#lo1').onclick = logout
 window.onhashchange = route
 $('#lf').onsubmit = async e => {
-  e.preventDefault(); const f = new FormData(e.target), u = f.get('u'), p = f.get('p')
-  try { await (auth.signIn ? auth.signIn({ username: u, password: p }) : auth.signInWithUsernameAndPassword(u, p)); await enter() } catch (x) { $('#le').textContent = x.message || '登录失败' }
+  e.preventDefault(); const f = new FormData(e.target), u = f.get('u'), p = f.get('p'), b = $('button', e.target), le = $('#le')
+  b.disabled = true; le.textContent = '登录中'
+  try {
+    const r = await Promise.race([auth.signIn ? auth.signIn({ username: u, password: p }) : auth.signInWithUsernameAndPassword(u, p), sleep(20000).then(() => { throw new Error('登录超时 请检查网络') })])
+    if (r?.error) throw r.error
+    le.textContent = ''; await enter(true)
+  } catch (x) { console.error(x); le.textContent = x.error_description || x.message || x.msg || JSON.stringify(x) || '登录失败' }
+  b.disabled = false
 }
 $('#initf').onsubmit = safe(async e => { e.preventDefault(); toast(await call('init', { key: new FormData(e.target).get('k') })); await enter() })
 enter()
