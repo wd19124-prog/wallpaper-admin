@@ -1,3 +1,4 @@
+if (typeof cloudbase === 'undefined') { document.body.innerHTML = '<p style="padding:40px">无法加载云开发组件 请检查网络后刷新页面</p>'; throw new Error('cloudbase sdk not loaded') }
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)]
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 const ic = n => `<i data-lucide="${n}"></i>`
@@ -9,7 +10,7 @@ const app = cloudbase.init({ env: CFG.env, region: CFG.region, accessKey: CFG.ac
 const auth = app.auth({ persistence: 'local' })
 let ME = null
 
-const paint = el => { $$('[data-s],tbody tr', el).forEach((n, i) => n.style.setProperty('--i', i)); lucide.createIcons() }
+const paint = el => { $$('[data-s],tbody tr', el).forEach((n, i) => n.style.setProperty('--i', i)); window.lucide && lucide.createIcons() }
 function toast(m, e) { const d = Object.assign(document.createElement('div'), { textContent: m, className: e ? 'e' : '' }); $('#toast').append(d); setTimeout(() => d.remove(), 3200) }
 async function call(action, data = {}) {
   const r = (await app.callFunction({ name: 'adminApi', data: { action, ...data } })).result
